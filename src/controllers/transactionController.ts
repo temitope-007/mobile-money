@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { StellarService } from "../services/stellar/stellarService";
 import { MobileMoneyService } from "../services/mobilemoney/mobileMoneyService";
-import { TransactionModel } from "../models/transaction";
+import { TransactionModel, TransactionStatus } from "../models/transaction";
 import { lockManager, LockKeys } from "../utils/lock";
 import { addTransactionJob, getJobProgress } from "../queue";
 
@@ -22,7 +22,7 @@ export const depositHandler = async (req: Request, res: Response) => {
           phoneNumber,
           provider,
           stellarAddress,
-          status: "pending",
+          status: TransactionStatus.Pending,
           tags: [],
         });
 
@@ -38,7 +38,7 @@ export const depositHandler = async (req: Request, res: Response) => {
         return {
           transactionId: transaction.id,
           referenceNumber: transaction.referenceNumber,
-          status: "pending",
+          status: TransactionStatus.Pending,
           jobId: job.id,
         };
       },
@@ -71,7 +71,7 @@ export const withdrawHandler = async (req: Request, res: Response) => {
       phoneNumber,
       provider,
       stellarAddress,
-      status: "pending",
+      status: TransactionStatus.Pending,
       tags: [],
     });
 
@@ -87,7 +87,7 @@ export const withdrawHandler = async (req: Request, res: Response) => {
     res.json({
       transactionId: transaction.id,
       referenceNumber: transaction.referenceNumber,
-      status: "pending",
+      status: TransactionStatus.Pending,
       jobId: job.id,
     });
   } catch (error) {
@@ -105,7 +105,7 @@ export const getTransactionHandler = async (req: Request, res: Response) => {
     }
 
     let jobProgress = null;
-    if (transaction.status === "pending") {
+    if (transaction.status === TransactionStatus.Pending) {
       jobProgress = await getJobProgress(id);
     }
 
