@@ -1,9 +1,11 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mobile-money-stellar
+  name: mobile-money
+  labels:
+    app: mobile-money
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
       app: mobile-money
@@ -24,12 +26,11 @@ spec:
             - -c
             - "until pg_isready -h postgres-service -p 5432; do echo waiting for database; sleep 2; done;"
       containers:
-        - name: backend
-          image: mobile-money-backend:v1
+        - name: mobile-money
+          image: shantelpeters/mobile-money:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
-          # Add this block:
           resources:
             requests:
               cpu: "100m"
@@ -42,15 +43,17 @@ spec:
                 name: mobile-money-config
             - secretRef:
                 name: mobile-money-secrets
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /health
               port: 3000
-            initialDelaySeconds: 30
+            initialDelaySeconds: 10
             periodSeconds: 20
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 3000
-            initialDelaySeconds: 15
-            periodSeconds: 10
