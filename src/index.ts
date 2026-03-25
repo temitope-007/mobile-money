@@ -4,6 +4,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 
+import { exportRoutes } from "./routes/export";
 import { transactionRoutes } from "./routes/transactions";
 import { bulkRoutes } from "./routes/bulk";
 import { transactionDisputeRoutes, disputeRoutes } from "./routes/disputes";
@@ -121,6 +122,7 @@ app.use(globalTimeout);
 app.use(haltOnTimedout);
 
 // Routes
+app.use("/api/transactions", exportRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/transactions", transactionDisputeRoutes);
 app.use("/api/transactions/bulk", bulkRoutes);
