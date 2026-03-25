@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -33,7 +33,22 @@ const limiter = rateLimit({
 app.use(metricsMiddleware);
 app.use(helmet());
 app.use(cors());
-app.use(express.json());
+
+// --- Updated: JSON body parser with size limit ---
+app.use(
+  express.json({
+    limit: process.env.REQUEST_SIZE_LIMIT || "10mb", // Default 10mb
+  })
+);
+
+// --- Optional: urlencoded parser with same limit ---
+app.use(
+  express.urlencoded({
+    limit: process.env.REQUEST_SIZE_LIMIT || "10mb",
+    extended: true,
+  })
+);
+
 app.use(limiter);
 app.use(responseTime);
 
@@ -86,6 +101,17 @@ app.use("/api/disputes", disputeRoutes);
 app.get("/health/queue", getQueueHealth);
 app.post("/admin/queues/pause", pauseQueueEndpoint);
 app.post("/admin/queues/resume", resumeQueueEndpoint);
+
+// --- NEW: Global handler for payload too large ---
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  if (err.type === "entity.too.large") {
+    return res.status(413).json({
+      error: "Payload Too Large",
+      message: `Request exceeds the maximum size of ${process.env.REQUEST_SIZE_LIMIT || "10mb"}`,
+    });
+  }
+  next(err);
+});
 
 // Error handlers
 app.use(timeoutErrorHandler);
