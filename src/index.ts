@@ -7,6 +7,7 @@ import { transactionRoutes } from './routes/transactions';
 import { bulkRoutes } from './routes/bulk';
 import { transactionDisputeRoutes, disputeRoutes } from './routes/disputes';
 import { errorHandler } from './middleware/errorHandler';
+import { pool } from './config/database';
 import { connectRedis } from './config/redis';
 import { globalTimeout, haltOnTimedout, timeoutErrorHandler } from './middleware/timeout';
 
@@ -35,8 +36,34 @@ app.use(limiter);
 app.use(globalTimeout);
 app.use(haltOnTimedout);
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/health', async (req, res) => {
+  const health: {
+    status: 'ok' | 'degraded';
+    timestamp: string;
+    database: { status: 'connected' | 'disconnected'; latencyMs?: number; error?: string };
+  } = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    database: { status: 'disconnected' },
+  };
+ 
+  try {
+    const start = Date.now();
+    await pool.query('SELECT 1');
+    health.database = {
+      status: 'connected',
+      latencyMs: Date.now() - start,
+    };
+  } catch (err) {
+    health.status = 'degraded';
+    health.database = {
+      status: 'disconnected',
+      error: err instanceof Error ? err.message : 'Unknown error',
+    };
+  }
+ 
+  const httpStatus = health.status === 'ok' ? 200 : 503;
+  res.status(httpStatus).json(health);
 });
 
 app.use('/api/transactions', transactionRoutes);
@@ -57,7 +84,8 @@ connectRedis()
     console.error('Failed to connect to Redis:', err);
     console.warn('Distributed locks will not be available');
   });
-
+ 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Rate limit: ${RATE_LIMIT_MAX_REQUESTS} requests per ${RATE_LIMIT_WINDOW_MS / 1000}s`);
 });
