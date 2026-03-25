@@ -48,7 +48,7 @@ interface ValidationError {
 
 type JobStatus = "pending" | "processing" | "completed" | "failed";
 
-interface BulkJob {
+export interface BulkJob {
   id: string;
   status: JobStatus;
   total: number;
@@ -65,6 +65,10 @@ interface BulkJob {
 // ---------------------------------------------------------------------------
 
 const jobs = new Map<string, BulkJob>();
+
+export function getBulkImportJob(jobId: string): BulkJob | undefined {
+  return jobs.get(jobId);
+}
 
 // ---------------------------------------------------------------------------
 // Validation

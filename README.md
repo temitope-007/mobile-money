@@ -10,7 +10,7 @@ A backend service that bridges mobile money providers (MTN, Airtel, Orange) with
 
 - Mobile money integrations (MTN, Airtel, Orange)
 - Stellar blockchain integration
-- RESTful API
+- RESTful API and GraphQL (`/graphql`)
 - PostgreSQL database
 - Docker support
 - TypeScript
@@ -112,6 +112,10 @@ npm run test:watch
 - `POST /api/transactions/withdraw` - Withdraw from Stellar to mobile money
 - `GET /api/transactions/:id` - Get transaction status
 
+### GraphQL
+- `POST /graphql` (and Playground at `GET /graphql` in development)
+- See [docs/GRAPHQL.md](docs/GRAPHQL.md) for authentication, schema notes, and examples
+
 ## Project Structure
 
 ```
@@ -121,6 +125,7 @@ src/
 │   ├── stellar/     # Stellar integration
 │   └── mobilemoney/ # Mobile money providers
 ├── routes/          # API routes
+├── graphql/         # GraphQL schema, resolvers, Apollo server setup
 ├── models/          # Database models
 ├── middleware/      # Express middleware
 └── index.ts         # Entry point

@@ -67,6 +67,17 @@ export class TransactionModel {
     return result.rows[0] || null;
   }
 
+  /** Paginated list, newest first. `limit` is capped at 100. */
+  async list(limit = 50, offset = 0): Promise<Transaction[]> {
+    const capped = Math.min(Math.max(limit, 1), 100);
+    const off = Math.max(offset, 0);
+    const result = await pool.query(
+      'SELECT * FROM transactions ORDER BY created_at DESC LIMIT $1 OFFSET $2',
+      [capped, off],
+    );
+    return result.rows;
+  }
+
   async updateStatus(id: string, status: TransactionStatus): Promise<void> {
     await pool.query("UPDATE transactions SET status = $1 WHERE id = $2", [
       status,

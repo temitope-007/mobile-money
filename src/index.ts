@@ -132,6 +132,7 @@ connectRedis()
     console.error("Failed to connect to Redis:", err);
     console.warn("Distributed locks will not be available");
   });
+}
 
 // Initialize queue dashboard
 const queueRouter = createQueueDashboard();
