@@ -14,7 +14,7 @@ interface AirtelResponse {
   };
 }
 
-export class AirtelProvider {
+export class AirtelService {
   private client: AxiosInstance;
   private token: string | null = null;
   private tokenExpiry: number = 0;
@@ -31,6 +31,16 @@ export class AirtelProvider {
       return this.token;
     }
 
+    const response = await this.client.post("/auth/oauth2/token", null, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization:
+          "Basic " +
+          Buffer.from(
+            `${process.env.AIRTEL_API_KEY}:${process.env.AIRTEL_API_SECRET}`,
+          ).toString("base64"),
+      },
+    });
     try {
       const response = await this.client.post("/auth/oauth2/token", null, {
         headers: {
@@ -67,20 +77,29 @@ export class AirtelProvider {
           this.token = null;
         }
 
+        // Retry only for transient errors
         if (
-          (axiosError.response?.status && axiosError.response.status >= 500) ||
-          axiosError.code === "ECONNABORTED"
+          ((err as { response?: { status?: number } }).response?.status &&
+            (err as { response: { status: number } }).response.status >= 500) ||
+          (err as { code?: string }).code === "ECONNABORTED"
         ) {
           console.warn(`Retrying Airtel request (${i + 1})`);
           await new Promise((res) => setTimeout(res, 1000 * (i + 1)));
           continue;
         }
+
         throw err;
       }
     }
+
     throw lastError;
   }
 
+  /**
+   * =========================
+   * REQUEST PAYMENT (COLLECTION)
+   * =========================
+   */
   async requestPayment(phoneNumber: string, amount: string) {
     const token = await this.authenticate();
     const reference = `AIRTEL-${Date.now()}`;
@@ -125,8 +144,7 @@ export class AirtelProvider {
 
     return this.withRetry(async () => {
       try {
-        // Apply AirtelResponse here
-        const response = await this.client.get<AirtelResponse>(
+        const response = await this.client.get(
           `/standard/v1/payments/${reference}`,
           {
             headers: {
@@ -136,7 +154,6 @@ export class AirtelProvider {
             },
           },
         );
-
         return { success: true, data: response.data };
       } catch (error) {
         return { success: false, error };
@@ -144,6 +161,11 @@ export class AirtelProvider {
     });
   }
 
+  /**
+   * =========================
+   * PAYOUT (DISBURSEMENT)
+   * =========================
+   */
   async sendPayout(phoneNumber: string, amount: string) {
     const token = await this.authenticate();
     const reference = `AIRTEL-PAYOUT-${Date.now()}`;

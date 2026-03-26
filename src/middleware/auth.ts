@@ -1,10 +1,27 @@
 import { Request, Response, NextFunction } from "express";
+import { verifyOAuthAccessToken } from "../auth/oauth";
+import { verifyToken, JWTPayload } from "../auth/jwt";
+
+type RequestUser = {
+  id: string;
+  role: string;
+  clientId?: string;
+  scopes?: string[];
+  [key: string]: unknown;
+};
 
 export interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    role: string;
-  };
+  user?: RequestUser;
+}
+
+declare module "express-serve-static-core" {
+  interface Request {
+    jwtUser?: JWTPayload;
+    user?: RequestUser;
+    userRole?: string;
+    userPermissions?: string[];
+    twoFactorVerified?: boolean;
+  }
 }
 
 /**
@@ -19,18 +36,118 @@ export const requireAuth = (
   const apiKey = req.header("X-API-Key");
   const adminKey = process.env.ADMIN_API_KEY || "dev-admin-key";
 
-  if (!apiKey || apiKey !== adminKey) {
-    return res.status(401).json({
-      error: "Unauthorized",
-      message: "Valid administrative API key required in X-API-Key header",
-    });
+  if (apiKey && apiKey === adminKey) {
+    (req as AuthRequest).user = {
+      id: "admin-system",
+      role: "admin",
+    };
+
+    return next();
   }
 
-  // Mock user for admin actions
-  (req as AuthRequest).user = {
-    id: "admin-system",
-    role: "admin",
-  };
+  const authorization = req.header("Authorization");
+  const bearerToken = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
+
+  if (bearerToken) {
+    try {
+      const claims = verifyOAuthAccessToken(bearerToken);
+      (req as AuthRequest).user = {
+        id: claims.sub,
+        role: claims.role,
+        clientId: claims.client_id,
+        scopes: claims.scope.split(/\s+/).filter(Boolean),
+      };
+
+      return next();
+    } catch {
+      return res.status(401).json({
+        error: "Unauthorized",
+        message: "Invalid or expired bearer token",
+      });
+    }
+  }
+
+  return res.status(401).json({
+    error: "Unauthorized",
+    message: "Valid administrative API key or OAuth bearer token required",
+  });
+};
+
+/**
+ * JWT Authentication middleware that verifies JWT tokens
+ * and attaches user information to the request object
+ */
+export function authenticateToken(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+
+  if (!token) {
+    res.status(401).json({
+      error: "Access denied",
+      message: "No token provided",
+    });
+    return;
+  }
+
+  try {
+    const decoded = verifyToken(token);
+    req.jwtUser = decoded;
+    next();
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === "Token has expired") {
+        res.status(401).json({
+          error: "Token expired",
+          message: "Please log in again",
+        });
+      } else if (error.message === "Invalid token") {
+        res.status(401).json({
+          error: "Invalid token",
+          message: "Token is malformed or tampered with",
+        });
+      } else {
+        res.status(401).json({
+          error: "Authentication failed",
+          message: error.message,
+        });
+      }
+    } else {
+      res.status(401).json({
+        error: "Authentication failed",
+        message: "Unknown error occurred",
+      });
+    }
+  }
+}
+
+/**
+ * Optional JWT authentication middleware that attaches user information
+ * if a valid token is present, but doesn't block requests without tokens
+ */
+export function optionalAuthentication(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+
+  if (!token) {
+    next();
+    return;
+  }
+
+  try {
+    const decoded = verifyToken(token);
+    req.jwtUser = decoded;
+  } catch {
+    // Silently ignore token errors for optional authentication
+    // The request can proceed without user information
+  }
 
   next();
-};
+}

@@ -1,17 +1,55 @@
 import { Router } from "express";
 import {
+  cancelTransactionHandler,
   depositHandler,
-  withdrawHandler,
   getTransactionHandler,
-  updateNotesHandler,
+  getTransactionHistoryHandler,
+  listAmlAlertsHandler,
+  patchMetadataHandler,
+  reviewAmlAlertHandler,
   searchTransactionsHandler,
+  updateNotesHandler,
+  updateMetadataHandler,
+  deleteMetadataKeysHandler,
+  searchByMetadataHandler,
+  withdrawHandler,
 } from "../controllers/transactionController";
 import { validateTransaction } from "../middleware/validateTransaction";
 import { TimeoutPresets, haltOnTimedout } from "../middleware/timeout";
+import { authenticateToken } from "../middleware/auth";
 
 export const transactionRoutes = Router();
 
-// Deposit route
+transactionRoutes.get(
+  "/",
+  TimeoutPresets.quick,
+  haltOnTimedout,
+  getTransactionHistoryHandler,
+);
+
+transactionRoutes.get(
+  "/search",
+  TimeoutPresets.quick,
+  haltOnTimedout,
+  searchTransactionsHandler,
+);
+
+transactionRoutes.get(
+  "/aml/alerts",
+  authenticateToken,
+  TimeoutPresets.quick,
+  haltOnTimedout,
+  listAmlAlertsHandler,
+);
+
+transactionRoutes.patch(
+  "/aml/alerts/:alertId/review",
+  authenticateToken,
+  TimeoutPresets.quick,
+  haltOnTimedout,
+  reviewAmlAlertHandler,
+);
+
 transactionRoutes.post(
   "/deposit",
   TimeoutPresets.long,
@@ -20,7 +58,6 @@ transactionRoutes.post(
   depositHandler,
 );
 
-// Withdraw route
 transactionRoutes.post(
   "/withdraw",
   TimeoutPresets.long,
@@ -29,7 +66,6 @@ transactionRoutes.post(
   withdrawHandler,
 );
 
-// Quick read operation
 transactionRoutes.get(
   "/:id",
   TimeoutPresets.quick,
@@ -37,7 +73,13 @@ transactionRoutes.get(
   getTransactionHandler,
 );
 
-// Notes and search
+transactionRoutes.post(
+  "/:id/cancel",
+  TimeoutPresets.quick,
+  haltOnTimedout,
+  cancelTransactionHandler,
+);
+
 transactionRoutes.patch(
   "/:id/notes",
   TimeoutPresets.quick,
@@ -45,9 +87,34 @@ transactionRoutes.patch(
   updateNotesHandler,
 );
 
-transactionRoutes.get(
-  "/search",
+// Replace metadata
+transactionRoutes.put(
+  "/:id/metadata",
   TimeoutPresets.quick,
   haltOnTimedout,
-  searchTransactionsHandler,
+  updateMetadataHandler,
+);
+
+// Merge metadata keys
+transactionRoutes.patch(
+  "/:id/metadata",
+  TimeoutPresets.quick,
+  haltOnTimedout,
+  patchMetadataHandler,
+);
+
+// Delete metadata keys
+transactionRoutes.delete(
+  "/:id/metadata",
+  TimeoutPresets.quick,
+  haltOnTimedout,
+  deleteMetadataKeysHandler,
+);
+
+// Search by metadata
+transactionRoutes.post(
+  "/search/metadata",
+  TimeoutPresets.quick,
+  haltOnTimedout,
+  searchByMetadataHandler,
 );

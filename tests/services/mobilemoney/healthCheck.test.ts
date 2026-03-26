@@ -232,25 +232,15 @@ describe("checkMobileMoneyHealth()", () => {
       return fakeFetch(200)(url, init);
     };
 
-    const result = await checkMobileMoneyHealth(ALL, mixedFetch);
+      const result = await checkMobileMoneyHealth(ALL, mixedFetch);
 
-    // FIXED: Use asymmetric matchers to ignore specific values of responseTime
-    expect(result).toMatchObject<MobileMoneyHealthResult>({
-      providers: {
-        mtn: {
-          status: "up",
-          responseTime: expect.any(Number),
+      expect(result).toMatchObject<MobileMoneyHealthResult>({
+        providers: {
+          mtn: { status: "up", responseTime: expect.any(Number) },
+          airtel: { status: "up", responseTime: expect.any(Number) },
+          orange: { status: "down", responseTime: null },
         },
-        airtel: {
-          status: "up",
-          responseTime: expect.any(Number),
-        },
-        orange: {
-          status: "down",
-          responseTime: null,
-        },
-      },
-    });
+      });
   });
 
   it("never rejects when all providers fail", async () => {

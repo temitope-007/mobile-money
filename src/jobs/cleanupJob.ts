@@ -1,4 +1,7 @@
 import { pool } from "../config/database";
+import { TransactionModel } from "../models/transaction";
+
+const transactionModel = new TransactionModel();
 
 /**
  * Cleanup Job
@@ -8,14 +11,20 @@ import { pool } from "../config/database";
  */
 export async function runCleanupJob(): Promise<void> {
   const retentionDays = parseInt(process.env.LOG_RETENTION_DAYS || "90", 10);
+  const expiredKeyCount =
+    await transactionModel.releaseAllExpiredIdempotencyKeys();
 
   const result = await pool.query(
     `DELETE FROM transactions
      WHERE status IN ('completed', 'failed', 'cancelled')
        AND created_at < NOW() - INTERVAL '${retentionDays} days'`,
   );
+  const deletedCount = result?.rowCount ?? 0;
 
   console.log(
-    `[cleanup] Deleted ${result.rowCount} old transaction(s) older than ${retentionDays} days`,
+    `[cleanup] Deleted ${deletedCount} old transaction(s) older than ${retentionDays} days`,
+  );
+  console.log(
+    `[cleanup] Released ${expiredKeyCount} expired idempotency key(s)`,
   );
 }

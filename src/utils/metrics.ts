@@ -43,42 +43,18 @@ export const transactionErrorsTotal = new Counter({
   registers: [register],
 });
 
-// Mobile Money Provider Metrics
-export const providerResponseTimeSeconds = new Histogram({
-  name: "provider_response_time_seconds",
-  help: "Response time of mobile money provider API calls in seconds",
-  labelNames: ["provider", "operation", "status"],
-  buckets: [0.1, 0.25, 0.5, 1, 2.5, 5, 10, 20, 30, 60],
+// Failover metrics
+export const providerFailoverTotal = new Counter({
+  name: "provider_failover_total",
+  help: "Total number of automatic provider failovers",
+  labelNames: ["type", "from_provider", "to_provider", "reason"],
   registers: [register],
 });
 
-export const providerResponseTimeSummary = new Summary({
-  name: "provider_response_time_summary",
-  help: "Precise quantiles for mobile money provider response times",
-  labelNames: ["provider", "operation", "status"],
-  percentiles: [0.5, 0.9, 0.95, 0.99],
-  registers: [register],
-});
-
-export const healthCheckResponseTimeSeconds = new Histogram({
-  name: "health_check_response_time_seconds",
-  help: "Response time for mobile money health pings",
-  labelNames: ["provider", "status"],
-  buckets: [0.1, 0.5, 1, 2, 5, 10],
-  registers: [register],
-});
-
-export const slowRequestsTotal = new Counter({
-  name: "slow_requests_total",
-  help: "Total number of mobile money provider requests taking > 5 seconds",
-  labelNames: ["provider", "operation"],
-  registers: [register],
-});
-
-export const timeoutRequestsTotal = new Counter({
-  name: "timeout_requests_total",
-  help: "Total number of mobile money provider requests that timed out",
-  labelNames: ["provider", "operation"],
+export const providerFailoverAlerts = new Counter({
+  name: "provider_failover_alerts_total",
+  help: "Number of failover alert notifications emitted",
+  labelNames: ["provider"],
   registers: [register],
 });
 
