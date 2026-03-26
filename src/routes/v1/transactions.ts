@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { setApiVersion } from "../../middleware/apiVersion";
+import { setApiVersion, VersionedRequest } from "../../middleware/apiVersion";
 import {
   listAmlAlertsHandler,
   depositHandler,

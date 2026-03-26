@@ -92,8 +92,7 @@ export interface Transaction {
   webhook_delivered_at?: Date | null;
   webhook_last_error?: string | null;
   metadata?: Record<string, unknown>;
-  userId?: string | null;
-  retryCount?: number;
+
   createdAt: Date;
   updatedAt?: Date | null;
 }
@@ -111,6 +110,9 @@ export interface CreateTransactionInput {
   idempotencyKey?: string | null;
   idempotencyExpiresAt?: Date | null;
   metadata?: Record<string, unknown> | null;
+  currency?: string;
+  originalAmount?: string;
+  convertedAmount?: string;
 }
 
 export interface WebhookDeliveryUpdate {
@@ -127,6 +129,7 @@ export function mapTransactionRow(
   if (!row) return null;
   const dbRow = row as Record<string, unknown>;
   const created = dbRow.created_at ?? row.createdAt;
+  const updated = dbRow.updated_at ?? row.updatedAt;
   return {
     id: String(row.id),
     referenceNumber: String(

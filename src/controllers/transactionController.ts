@@ -12,6 +12,7 @@ import { TransactionLimitService } from "../services/transactionLimit/transactio
 import { KYCService } from "../services/kyc/kycService";
 import { MobileMoneyProvider, validateProviderLimits } from "../config/providers";
 import type { TransactionJobData } from "../queue/transactionQueue";
+import { amlService } from "../services/aml";
 import {
   CancelTransactionResponse,
   LimitExceededErrorResponse,
@@ -19,7 +20,7 @@ import {
   TransactionDetailResponse,
   TransactionResponse,
 } from "../types/api";
-import type { TransactionJobData } from "../queue/transactionQueue";
+
 
 const IDEMPOTENCY_TTL_HOURS = Number(
   process.env.IDEMPOTENCY_KEY_TTL_HOURS || 24,
@@ -559,6 +560,7 @@ export const updateAdminNotesHandler = async (req: Request, res: Response) => {
     const transaction = await transactionModel.updateAdminNotes(id, adminNotes);
     if (!transaction) {
       return res.status(404).json({ error: "Transaction not found" });
+    }
 
     return res.json(transaction);
   } catch (err) {
@@ -707,7 +709,7 @@ export const listAmlAlertsHandler = async (req: Request, res: Response) => {
     return res.json({
       data: alerts,
       total: alerts.length,
-      pendingReview: alerts.filter((a) => a.status === "pending_review").length,
+      pendingReview: alerts.filter((a: any) => a.status === "pending_review").length,
     });
   } catch (error) {
     console.error("Failed to list AML alerts:", error);

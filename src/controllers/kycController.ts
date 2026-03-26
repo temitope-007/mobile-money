@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { Pool } from 'pg';
-import KYCService, { KYCLevel } from '../services/kyc';
+import KYCService, { KYCLevel, DocumentType } from '../services/kyc';
 import { z } from 'zod';
 
 // Validation schemas

@@ -36,7 +36,7 @@ transactionRoutes.get(
 
 transactionRoutes.get(
   "/aml/alerts",
-  requireAuth,
+  authenticateToken,
   TimeoutPresets.quick,
   haltOnTimedout,
   listAmlAlertsHandler,
@@ -44,7 +44,7 @@ transactionRoutes.get(
 
 transactionRoutes.patch(
   "/aml/alerts/:alertId/review",
-  requireAuth,
+  authenticateToken,
   TimeoutPresets.quick,
   haltOnTimedout,
   reviewAmlAlertHandler,

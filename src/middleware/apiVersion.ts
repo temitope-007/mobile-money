@@ -74,7 +74,7 @@ export const apiVersionMiddleware: RequestHandler = (req, res, next) => {
  */
 export const validateVersionMiddleware: RequestHandler = (req, res, next) => {
   const versionedReq = req as VersionedRequest;
-  const { apiVersion } = versionedReq;
+  const apiVersion = versionedReq.apiVersion || CURRENT_VERSION;
 
   if (!SUPPORTED_VERSIONS.includes(apiVersion)) {
     return res.status(400).json({

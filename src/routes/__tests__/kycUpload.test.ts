@@ -8,14 +8,14 @@ import * as s3Upload from '../../services/s3Upload';
 jest.mock('../../services/s3Upload');
 jest.mock('../../middleware/auth', () => ({
   authenticateToken: (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    req.user = { id: 'test-user-id', email: 'test@example.com' };
+    req.user = { id: 'test-user-id', email: 'test@example.com', role: 'user' };
     next();
   },
 }));
 
 describe('KYC Document Upload', () => {
   let app: express.Application;
-  let mockPool: jest.Mocked<Pool>;
+  let mockPool: any;
 
   beforeEach(() => {
     // Create mock pool
@@ -37,7 +37,7 @@ describe('KYC Document Upload', () => {
     it('should upload a valid PDF document', async () => {
       // Mock database queries
       mockPool.query
-        .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // Access check
+        .mockResolvedValueOnce({ rows: [{ id: 1 }] } as any) // Access check
         .mockResolvedValueOnce({
           rows: [
             {
@@ -46,7 +46,7 @@ describe('KYC Document Upload', () => {
               created_at: new Date(),
             },
           ],
-        }); // Insert document
+        } as any); // Insert document
 
       // Mock S3 upload
       (s3Upload.validateFile as jest.Mock).mockReturnValue({ valid: true });
@@ -104,7 +104,7 @@ describe('KYC Document Upload', () => {
 
     it('should reject upload for non-owned applicant', async () => {
       // Mock database query to return no rows (no access)
-      mockPool.query.mockResolvedValueOnce({ rows: [] });
+      mockPool.query.mockResolvedValueOnce({ rows: [] } as any);
 
       const response = await request(app)
         .post('/api/kyc/documents/upload')
@@ -116,7 +116,7 @@ describe('KYC Document Upload', () => {
     });
 
     it('should handle S3 upload failure', async () => {
-      mockPool.query.mockResolvedValueOnce({ rows: [{ id: 1 }] }); // Access check
+      mockPool.query.mockResolvedValueOnce({ rows: [{ id: 1 }] } as any); // Access check
 
       (s3Upload.validateFile as jest.Mock).mockReturnValue({ valid: true });
       (s3Upload.uploadToS3 as jest.Mock).mockResolvedValue({
@@ -150,7 +150,7 @@ describe('KYC Document Upload', () => {
         },
       ];
 
-      mockPool.query.mockResolvedValueOnce({ rows: mockDocuments });
+      mockPool.query.mockResolvedValueOnce({ rows: mockDocuments } as any);
 
       const response = await request(app).get('/api/kyc/documents');
 
@@ -161,7 +161,7 @@ describe('KYC Document Upload', () => {
     });
 
     it('should return empty array when no documents', async () => {
-      mockPool.query.mockResolvedValueOnce({ rows: [] });
+      mockPool.query.mockResolvedValueOnce({ rows: [] } as any);
 
       const response = await request(app).get('/api/kyc/documents');
 
