@@ -1,11 +1,11 @@
+import crypto from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { v4 as uuid } from "uuid";
-import { TransactionModel } from "../models/transaction";
+import { Transaction, TransactionModel } from "../models/transaction";
 import { createZipFile } from "../utils/create-zip-file";
 import { TransactionService } from "./transanctionService";
 import { getUserById } from "./userService";
-
 export class GDPRService {
   private txService: TransactionService;
 
@@ -48,5 +48,22 @@ export class GDPRService {
       await fs.rm(tempDir, { recursive: true }).catch(() => {});
       throw err;
     }
+  }
+
+  private hashString(str: string) {
+    return crypto
+      .createHash("sha256")
+      .update(str)
+      .digest("hex")
+      .substring(0, 16);
+  }
+
+  async anonymizeTransaction(tx: Transaction) {
+    return {
+      ...tx,
+      phoneNumber: this.hashString(tx.phoneNumber),
+      idempotencyKey: this.hashString(String(tx.idempotencyKey)),
+      b: this.hashString(tx.stellarAddress),
+    };
   }
 }
