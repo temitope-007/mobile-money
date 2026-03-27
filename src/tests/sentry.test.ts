@@ -1,5 +1,5 @@
 import * as Sentry from "@sentry/node";
-import { sentryBreadcrumbMiddleware } from "./sentry";
+import { sentryBreadcrumbMiddleware } from "../middleware/sentry";
 import { Request, Response } from "express";
 
 // Mock Sentry
