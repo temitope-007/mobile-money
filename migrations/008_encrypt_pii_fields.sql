@@ -1,6 +1,16 @@
 -- Migration: 008_encrypt_pii_fields
 -- Description: Increase column sizes to accommodate encrypted PII blobs
 
+-- Transactions table
+ALTER TABLE transactions 
+  ALTER COLUMN phone_number TYPE TEXT,
+  ALTER COLUMN stellar_address TYPE TEXT;
+
+-- Users table
+ALTER TABLE users 
+  ALTER COLUMN phone_number TYPE TEXT,
+  ALTER COLUMN email TYPE TEXT,
+  ALTER COLUMN two_factor_secret TYPE TEXT;
 -- Some optional columns are introduced outside the ordered migrations/ chain.
 -- Guard each ALTER so fresh databases do not fail when those columns are absent.
 
