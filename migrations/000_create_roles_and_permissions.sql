@@ -60,6 +60,3 @@ WHERE r.name = 'viewer' AND p.name = 'read:all'
 ON CONFLICT (role_id, permission_id) DO NOTHING;
 
 -- Set default role for existing users (if they don't have a role)
-UPDATE users 
-SET role_id = (SELECT id FROM roles WHERE name = 'user')
-WHERE role_id IS NULL;
