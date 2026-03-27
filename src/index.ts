@@ -44,13 +44,17 @@ import {
 } from "./middleware/timeout";
 import { responseTime } from "./middleware/responseTime";
 import { requestId } from "./middleware/requestId";
+import { requestLogger } from "./middleware/logger";
 import { metricsMiddleware } from "./middleware/metrics";
 import { validateStellarNetwork, logStellarNetwork } from "./config/stellar";
 import { sessionAnomalyLogger } from "./services/logger";
+import { installGlobalLogger } from "./services/structuredLogger";
 import { HealthCheckResponse, ReadinessCheckResponse } from "./types/api";
+import sep24Router from "./stellar/sep24";
 import sep31Router from "./stellar/sep31";
 
 dotenv.config();
+installGlobalLogger();
 
 validateStellarNetwork();
 logStellarNetwork();
@@ -118,6 +122,7 @@ app.use(
 app.use(limiter);
 app.use(responseTime);
 app.use(requestId);
+app.use(requestLogger);
 
 // Session configuration with Redis store
 const sessionSecret =

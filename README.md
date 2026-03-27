@@ -80,6 +80,9 @@ npm start
 docker-compose up
 ```
 
+This also starts Elasticsearch, Logstash, Filebeat, and Kibana for structured
+log indexing. See [ELK stack guide](./docs/ELK_STACK.md).
+
 ### Docker (Development)
 
 Starts the app with hot reload, a debugger on port `9229`, PostgreSQL, and Redis.
@@ -374,6 +377,7 @@ git commit -m "Your message" --no-verify
 ## API Endpoints
 
 ## System Architecture
+
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 ### Health Checks
