@@ -245,10 +245,109 @@ export class TransactionModel {
     return mapTransactionRow(result.rows[0]);
   }
 
-  /** * Paginated list, newest first. `limit` is capped at 100. 
+  /** Paginated list, newest first. `limit` is capped at 100.
    * Updated for Issue #243: Advanced Filtering
    */
   async list(
+    limit = 50,
+    offset = 0,
+    startDate?: string,
+    endDate?: string,
+    filters?: {
+      minAmount?: number;
+      maxAmount?: number;
+      provider?: string;
+      tags?: string[];
+    },
+  ) {
+    const capped = Math.min(Math.max(limit, 1), 100);
+    const off = Math.max(offset, 0);
+
+    let query = "SELECT * FROM transactions WHERE 1=1";
+    const params: unknown[] = [];
+    let p = 1;
+
+    if (startDate) {
+      query += " AND created_at >= $" + p++;
+      params.push(new Date(startDate).toISOString());
+    }
+    if (endDate) {
+      query += " AND created_at <= $" + p++;
+      const end = new Date(endDate);
+      end.setUTCHours(23, 59, 59, 999);
+      params.push(end.toISOString());
+    }
+    if (filters?.minAmount !== undefined) {
+      query += " AND amount >= $" + p++;
+      params.push(filters.minAmount);
+    }
+    if (filters?.maxAmount !== undefined) {
+      query += " AND amount <= $" + p++;
+      params.push(filters.maxAmount);
+    }
+    if (filters?.provider) {
+      query += " AND provider = $" + p++;
+      params.push(filters.provider);
+    }
+    if (filters?.tags && filters.tags.length > 0) {
+      query += " AND tags @> $" + p++ + "::text[]";
+      params.push(filters.tags);
+    }
+
+    query += " ORDER BY created_at DESC LIMIT $" + p++ + " OFFSET $" + p++;
+    params.push(capped, off);
+
+    const result = await pool.query(query, params);
+    return result.rows
+      .map((r) => mapTransactionRow(r))
+      .filter((t): t is Transaction => t !== null);
+  }
+
+  /** Count matching rows — mirrors the filters in list(). */
+  async count(
+    startDate?: string,
+    endDate?: string,
+    filters?: {
+      minAmount?: number;
+      maxAmount?: number;
+      provider?: string;
+      tags?: string[];
+    },
+  ): Promise<number> {
+    let query = "SELECT COUNT(*) FROM transactions WHERE 1=1";
+    const params: unknown[] = [];
+    let p = 1;
+
+    if (startDate) {
+      query += " AND created_at >= $" + p++;
+      params.push(new Date(startDate).toISOString());
+    }
+    if (endDate) {
+      query += " AND created_at <= $" + p++;
+      const end = new Date(endDate);
+      end.setUTCHours(23, 59, 59, 999);
+      params.push(end.toISOString());
+    }
+    if (filters?.minAmount !== undefined) {
+      query += " AND amount >= $" + p++;
+      params.push(filters.minAmount);
+    }
+    if (filters?.maxAmount !== undefined) {
+      query += " AND amount <= $" + p++;
+      params.push(filters.maxAmount);
+    }
+    if (filters?.provider) {
+      query += " AND provider = $" + p++;
+      params.push(filters.provider);
+    }
+    if (filters?.tags && filters.tags.length > 0) {
+      query += " AND tags @> $" + p++ + "::text[]";
+      params.push(filters.tags);
+    }
+
+    const result = await pool.query(query, params);
+    return parseInt(result.rows[0].count, 10);
+  }
 
   async updateStatus(id: string, status: TransactionStatus): Promise<void> {
     await pool.query(
