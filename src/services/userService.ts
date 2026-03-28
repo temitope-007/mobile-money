@@ -1,3 +1,4 @@
+import { Pool, PoolClient } from "pg";
 import { pool } from "../config/database";
 import { encrypt, decrypt } from "../utils/encryption";
 
@@ -79,6 +80,7 @@ export async function getUserById(userId: string): Promise<User | null> {
   `;
 
   const result = await pool.query(query, [userId]);
+  console.log({ result });
   if (result.rows.length === 0) return null;
 
   const row = result.rows[0];
@@ -205,6 +207,83 @@ export async function updateUserById(
   } catch (err) {
     console.error("updateUser", err);
     throw err;
+  }
+}
+
+/**
+ * Deactivate user account
+ * @param userId
+ * @returns void
+ */
+export async function deactivateUserAccount(userId: string, dbPool?: Pool) {
+  let client: PoolClient | undefined;
+
+  try {
+    client = await (dbPool ?? pool).connect();
+
+    await client.query("BEGIN");
+
+    // 1. Confirm user exists
+    const user = await getUserById(userId);
+    if (!user) {
+      throw new Error(`User '${userId}' not found`);
+    }
+
+    // 2. Scrub PII while preserving foreign keys
+    // TODO: The `User` type and database table needs to
+    // be update with these fields:  is_active: boolean,   deactivated_at:Date`
+    await client.query(
+      `UPDATE users
+       SET 
+         first_name = $1,
+         last_name = $2,
+         address = NULL,
+         date_of_birth = NULL,
+         two_factor_secret = NULL,
+         backup_codes = NULL,
+         is_active = false,
+         deactivated_at = CURRENT_TIMESTAMP
+       WHERE id = $3`,
+      ["Deactivated", "User", userId],
+    );
+
+    // 3. Anonymize related data (preserve foreign keys)
+    // await pool.query(
+    //   `UPDATE user_profiles
+    //    SET bio = NULL, avatar_url = NULL, preferences = '{}'
+    //    WHERE user_id = $1`,
+    //   [userId],
+    // );
+
+    // 4. Delete sensitive data that shouldn't exist
+    // await pool.query(`DELETE FROM user_sessions WHERE user_id = $1`, [userId]);
+
+    // await pool.query(`DELETE FROM user_api_keys WHERE user_id = $1`, [userId]);
+
+    // 5. Archive transaction history (optional: keep for compliance)
+    // await pool.query(
+    //   `UPDATE user_transactions
+    //    SET user_id = NULL, anonymized = true
+    //    WHERE user_id = $1`,
+    //   [userId],
+    // );
+
+    // 6. Log the deactivation
+    // await pool.query(
+    //   `INSERT INTO audit_log (action, user_id, timestamp)
+    //    VALUES ($1, $2, CURRENT_TIMESTAMP)`,
+    //   ["account_deactivated", userId],
+    // );
+
+    await client.query("COMMIT");
+  } catch (err) {
+    if (client) {
+      await client.query("ROLLBACK");
+    }
+    console.error("deactivateUserAccount error:", err);
+    throw err;
+  } finally {
+    if (client) client.release();
   }
 }
 
