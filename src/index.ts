@@ -61,6 +61,7 @@ import { HealthCheckResponse, ReadinessCheckResponse } from "./types/api";
 import sep31Router from "./stellar/sep31";
 import sep24Router from "./stellar/sep24";
 import { createSep12Router } from "./stellar/sep12";
+import { createSep10Router } from "./stellar/sep10";
 
 // 1. Import Sentry Middleware
 import { initSentry, sentryBreadcrumbMiddleware } from "./middleware/sentry";
@@ -249,6 +250,7 @@ app.use("/api/contacts", contactsRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/kyc", createKYCRoutes(pool));
 app.use("/api/admin", requireAuth, adminRoutes);
+app.use("/sep10", createSep10Router());
 app.use("/sep31", sep31Router);
 app.use("/sep24", sep24Router);
 app.use("/sep12", createSep12Router(pool));
@@ -302,7 +304,7 @@ async function initializeRuntime(): Promise<void> {
   const { createQueueDashboard } = await import("./queue/dashboard");
   app.use("/admin/queues", createQueueDashboard());
 
-  // 
+  //
   const useHTTP2 = process.env.USE_HTTP2 === "true";
 
   if (useHTTP2) {
@@ -315,7 +317,7 @@ async function initializeRuntime(): Promise<void> {
     });
   } else {
     app.listen(PORT, () =>
-      console.log(`HTTP/1.1 server running on http://localhost:${PORT}`)
+      console.log(`HTTP/1.1 server running on http://localhost:${PORT}`),
     );
   }
 }
@@ -323,6 +325,5 @@ async function initializeRuntime(): Promise<void> {
 if (process.env.NODE_ENV !== "test") {
   void initializeRuntime();
 }
-
 
 export default app;
