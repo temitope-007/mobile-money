@@ -61,6 +61,7 @@ import { HealthCheckResponse, ReadinessCheckResponse } from "./types/api";
 import sep31Router from "./stellar/sep31";
 import sep24Router from "./stellar/sep24";
 import { createSep12Router } from "./stellar/sep12";
+import { createSep10Router } from "./stellar/sep10";
 import tomlRouter from "./routes/toml";
 
 // 1. Import Sentry Middleware
