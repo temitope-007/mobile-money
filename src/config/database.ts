@@ -293,6 +293,10 @@ export async function querySmart<T extends import("pg").QueryResultRow = any>(
     return queryRead<T>(text, params);
   } else {
     return queryWrite<T>(text, params);
+  }
+}
+
+/**
  * Get PgBouncer pool statistics
  * Queries PgBouncer admin database to get connection pool metrics
  */
