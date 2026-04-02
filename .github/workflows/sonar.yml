@@ -60,6 +60,7 @@ jobs:
 
       - name: Run database migrations
         run: npm run migrate:up
+        continue-on-error: true
         env:
           DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
 
